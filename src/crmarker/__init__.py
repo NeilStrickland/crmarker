@@ -74,9 +74,10 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
     except subprocess.TimeoutExpired as e:
         outcome = e
         output = "Task timed out\n"
-    output += outcome.stdout
+    if outcome.stdout:
+        output += outcome.stdout
     if outcome.stderr:
-        output += "*** Error output ***\n"
+        output += '<span style="font-weight:bold; color:red">Error output:</span>' + "\n"
         output += tweak_line_numbers(outcome.stderr, prefix_length)
 
     mark = 1 if output.strip() == 'All good!' else 0
