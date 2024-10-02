@@ -61,12 +61,12 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
     try:
         with open('testcode.py', 'w') as fout:
             fout.write(test_program)
-        outcome = subprocess.check_output(['python3', 'testcode.py'],
-                                         stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE,
-                                         timeout=2, 
-                                         universal_newlines=True,
-                                         check=True)
+        outcome = subprocess.run(['python3', 'testcode.py'],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  timeout=2, 
+                                  universal_newlines=True,
+                                  check=True)
     except subprocess.CalledProcessError as e:
         outcome = e
         output = f"Task failed with return code = {outcome.returncode}\n"
