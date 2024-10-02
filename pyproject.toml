@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crmarker"
+version = "0.0.1"
+authors = [
+  { name="Neil Strickland", email="N.P.Strickland@sheffield.ac.uk" },
+]
+description = "Functions for marking Python code in Coderunner"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://strickland1.org"
+Issues = "https://strickland1.org"
