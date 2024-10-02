@@ -57,7 +57,7 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
     output = ''
     test_program = prefix + "\n" + student_code + "\n" + suffix
     prefix_length = len(prefix.splitlines()) + 1
-
+    failed = False
     try:
         with open('testcode.py', 'w') as fout:
             fout.write(test_program)
@@ -77,7 +77,7 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
     output += outcome.stdout
     if outcome.stderr:
         output += "*** Error output ***\n"
-        output += tweak_line_numbers(outcome.stderr)
+        output += tweak_line_numbers(outcome.stderr, prefix_length)
 
     mark = 1 if output.strip() == 'All good!' else 0
     html = ''
