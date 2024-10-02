@@ -132,7 +132,8 @@ def check_function(GLOBALS, name, args, require_docstring=True, allow_extra_args
         return False, f"Your function <code>{full_name}</code> has no docstring."
     return True, None
 
-def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False, allow_none = False):
+def check_eval(GLOBALS, name, args, correct_val = None, 
+               allow_output = False, allow_none = False, hide_args = False):
     """
     Try to evaluate the function name(args) in the GLOBALS dictionary.
     The function is evaluated in a context where stdout is redirected to a string,
@@ -141,10 +142,23 @@ def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False, al
 
     Parameters:
     GLOBALS: a dictionary of global variables
+        This argument will always be the value returned by globals()
+        in the calling function.   However, because of technicalities
+        about scoping, we cannot just call globals() in this function.
     name: the name of the function to check
     args: a list of arguments to pass to the function
     correct_val: if not None, the function should return this value
+        It is only appropriate to use this if a simple check using == 
+        is adequate, and correct_val can conveniently be printed,
+        and plausible return values can also be printed.
     allow_output: if True, the function is allowed to print output
+    allow_none: if True, the function is allowed to return None
+        Normally, if the function returns None, we flag it as a likely error.
+    hide_args: This function returns various messages which usually 
+        include the arguments passed to the function.  If hide_args is
+        True, the messages will not include the arguments.  This is
+        intended for cases where the string representation of the
+        arguments would be too long or would not be helpful.
 
     Returns:
     (success, error_message, return_value)
@@ -152,21 +166,25 @@ def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False, al
     The return value is the value returned by the function.
     """
     func = GLOBALS[name]
+    if hide_args:
+        func_string = f"{name}(...)"
+    else:
+        func_string = f"{name}{tuple(args)}"
     try:
         with contextlib.redirect_stdout(io.StringIO()) as out:
             val = func(*args)
     except Exception as e:
-        msg = f"When evaluating <code>{name}{tuple(args)}</code>, your code raised an error: <code>{e}</code>"
+        msg = f"When evaluating <code>{func_string}</code>, your code raised an error: <code>{e}</code>"
         return False, msg, None
     if (not allow_output) and (out.getvalue().strip() != ''):
-        msg = f"When evaluating <code>{name}{tuple(args)}</code>, your code printed something.  It should not do this."
+        msg = f"When evaluating <code>{func_string}</code>, your code printed something.  It should not do this."
         return False, msg, None
     if (val is None) and (not allow_none):
-        msg = (f"When evaluating <code>{name}{tuple(args)}</code>, your function returned <code>None</code>. " + 
+        msg = (f"When evaluating <code>{func_string}</code>, your function returned <code>None</code>. " + 
                "This probably means that you did not include a <code>return</code> statement.")
         return False, msg, None
     if correct_val is not None and val != correct_val:
-        msg = (f"When evaluating <code>{name}{tuple(args)}</code>, your function should return <code>{correct_val}</code>, " + 
+        msg = (f"When evaluating <code>{func_string}</code>, your function should return <code>{correct_val}</code>, " + 
                f"but in fact it returns <code>{val}</code>.")
         return False, msg, val
     return True, None, val
