@@ -132,7 +132,7 @@ def check_function(GLOBALS, name, args, require_docstring=True, allow_extra_args
         return False, f"Your function <code>{full_name}</code> has no docstring."
     return True, None
 
-def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False):
+def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False, allow_none = False):
     """
     Try to evaluate the function name(args) in the GLOBALS dictionary.
     The function is evaluated in a context where stdout is redirected to a string,
@@ -161,7 +161,7 @@ def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False):
     if (not allow_output) and (out.getvalue().strip() != ''):
         msg = f"When evaluating <code>{name}{tuple(args)}</code>, your code printed something.  It should not do this."
         return False, msg, None
-    if val is None:
+    if (val is None) and (not allow_none):
         msg = (f"When evaluating <code>{name}{tuple(args)}</code>, your function returned <code>None</code>. " + 
                "This probably means that you did not include a <code>return</code> statement.")
         return False, msg, None
@@ -171,3 +171,48 @@ def check_eval(GLOBALS, name, args, correct_val = None, allow_output = False):
         return False, msg, val
     return True, None, val
 
+def check_single_plot(output_file = 'matplotliboutput'):
+    import matplotlib.pyplot
+    nfigs = len(matplotlib.pyplot.get_fignums())
+    if nfigs == 0:
+        msg = """
+Your code did not produce a plot that the marking system can check.
+This could be because you did not produce a plot at all, or because
+you called <code>plt.show()</code>, which makes the plot unavailable
+to the marking system.
+"""
+        return False, msg, None, None
+    else:
+        fig = matplotlib.pyplot.gcf()
+        ax = matplotlib.pyplot.gca()
+        matplotlib.pyplot.savefig(output_file)
+    if nfigs > 1:
+        msg = """
+Your code produced more than one plot.  This could mean that
+(a) you did not just enter your function definition but added some 
+extra code after the definition or (b) you called plt.figure() or 
+plt.subplots() at an inappropriate time, resulting in the creation 
+of a new plot.
+"""
+        return False, msg, fig, ax
+    else:
+        return True, None, fig, ax
+
+def check_bare(fig, ax):
+    """
+    Check if the figure is 'bare' (i.e. has no axes, spines, ticks, or labels)
+    Normally this would be achieved by calling ax.axis('off') but this 
+    function also tries to check whether the same effect has been achieved
+    by other means.
+    """
+    if not (ax.axison and fig.patch.get_visible()):
+        return True
+    if (ax.spines['top'].get_visible() or
+        ax.spines['right'].get_visible() or
+        ax.spines['left'].get_visible() or
+        ax.spines['bottom'].get_visible()):
+        return False
+    if ((ax.get_xaxis().get_visible() and len(ax.get_xticks())) or
+        (ax.get_yaxis().get_visible() and len(ax.get_xticks()))):
+        return False
+    return True
