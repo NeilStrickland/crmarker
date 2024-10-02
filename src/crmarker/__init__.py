@@ -6,7 +6,7 @@ import subprocess
 from inspect import signature
 
 ## Main process functions
-def ban_imports(student_func):
+def ban_imports(student_func, die_on_error=True):
     """
     Check if the student's code contains the word "import".
     If it does, return False and print an error message.
@@ -16,6 +16,8 @@ def ban_imports(student_func):
         output = 'The word "import" was found in your code.  Imports are not allowed in this question.'
         result = {'prologuehtml': output, 'fraction': 0}
         print(json.dumps(result))
+        if die_on_error:
+            sys.exit(0)
         return False
     return True
 
