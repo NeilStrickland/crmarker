@@ -1,4 +1,4 @@
-import json, sys, contextlib, io, subprocess, base64, re
+import json, sys, os, tempfile, contextlib, io, subprocess, base64, re
 from inspect import signature
 
 ## Main process functions
@@ -41,7 +41,7 @@ def tweak_line_numbers(error, prefix_length):
         new_error += line + '\n'
     return new_error
 
-def do_marking(prefix, student_code, suffix = ''):
+def do_marking(prefix, student_code, suffix = '', show_plot = False):
     """
     Mark a block of code submitted by a student.
 
@@ -61,17 +61,40 @@ def do_marking(prefix, student_code, suffix = ''):
     try:
         with open('testcode.py', 'w') as fout:
             fout.write(test_program)
-        output = subprocess.check_output(['python3', 'testcode.py'],
-                                         stderr=subprocess.STDOUT, 
-                                         universal_newlines=True)
+        outcome = subprocess.check_output(['python3', 'testcode.py'],
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE,
+                                         timeout=2, 
+                                         universal_newlines=True,
+                                         check=True)
     except subprocess.CalledProcessError as e:
-        output = tweak_line_numbers(e.output, prefix_length)
+        outcome = e
+        output = f"Task failed with return code = {outcome.returncode}\n"
+        failed = True
+    except subprocess.TimeoutExpired as e:
+        outcome = e
+        output = "Task timed out\n"
+    output += outcome.stdout
+    if outcome.stderr:
+        output += "*** Error output ***\n"
+        output += tweak_line_numbers(outcome.stderr)
 
     mark = 1 if output.strip() == 'All good!' else 0
-    result = {'prologuehtml': output, 'fraction': mark}
+    html = ''
+    if output:
+        html += '<div>' + output + '</div><br/>'
+    if show_plot and (not failed) and os.path.isfile('matplotliboutput.png'):
+        data_uri = make_data_uri('matplotliboutput.png')
+        html += """<img class="data-uri-example" title="Matplotlib plot" src="{}" alt="matplotliboutput.png">""".format(data_uri)
+
+    result = {'prologuehtml': html, 'fraction': mark}
     print(json.dumps(result))    
 
 ## Subprocess functions
+def matplotlib_setup():
+    if 'MPLCONFIGDIR' not in os.environ or os.environ['MPLCONFIGDIR'].startswith('/home'):
+        os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
+
 def check_function(GLOBALS, name, args, require_docstring=True, allow_extra_args=False):
     """
     Check if the function name(args) is defined in the GLOBALS dictionary.
