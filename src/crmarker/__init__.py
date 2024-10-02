@@ -170,7 +170,8 @@ def check_eval(GLOBALS, name, args, correct_val = None,
     if hide_args:
         func_string = f"{name}(...)"
     else:
-        func_string = f"{name}{tuple(args)}"
+        args_string = ', '.join([str(arg) for arg in args])
+        func_string = f"{name}({args_string})"
     try:
         with contextlib.redirect_stdout(io.StringIO()) as out:
             val = func(*args)
