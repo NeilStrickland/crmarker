@@ -65,7 +65,8 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
                                   timeout=2, 
-                                  universal_newlines=True,
+                                  text=True,
+                                  encoding = 'utf-8',
                                   check=True)
     except subprocess.CalledProcessError as e:
         outcome = e
@@ -75,7 +76,11 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
         outcome = e
         output = "Task timed out\n"
     if outcome.stdout:
-        output += outcome.stdout
+        s = outcome.stdout
+        if isinstance(s, str):
+            output += s
+        else:
+            output += "[non-string output]"
     if outcome.stderr:
         output += '<span style="font-weight:bold; color:red">Error output:</span>' + "\n"
         output += tweak_line_numbers(outcome.stderr, prefix_length)
@@ -215,6 +220,21 @@ plt.subplots() at an inappropriate time, resulting in the creation
 of a new plot.
 """
         return False, msg, fig, ax
+    elif len(fig.get_axes()) == 0:
+        msg = """
+Your code produced a figure that did not contain an axes object.
+It is not clear how this could happen.
+"""
+        return False, msg, fig, ax
+    elif len(fig.get_axes()) > 1:
+        msg = """
+Your code produced a figure that contained more than one axes object.
+This could mean that you called <code>fig, ax = plt.subplots(n, m)</code>
+with n or m being greater than one, giving an n by m grid of different
+axes objects.  That is not appropriate in this context: you should
+just have a single axes object.
+"""
+        return False, msg, fig, ax
     else:
         return True, None, fig, ax
 
@@ -227,10 +247,7 @@ def check_bare(fig, ax):
     """
     if not (ax.axison and fig.patch.get_visible()):
         return True
-    if (ax.spines['top'].get_visible() or
-        ax.spines['right'].get_visible() or
-        ax.spines['left'].get_visible() or
-        ax.spines['bottom'].get_visible()):
+    if ax.get_frame_on():
         return False
     if ((ax.get_xaxis().get_visible() and len(ax.get_xticks())) or
         (ax.get_yaxis().get_visible() and len(ax.get_xticks()))):
