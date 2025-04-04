@@ -64,7 +64,7 @@ def do_marking(prefix, student_code, suffix = '', show_plot = False):
         outcome = subprocess.run(['python3', 'testcode.py'],
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE,
-                                  timeout=2, 
+                                  timeout=10, 
                                   text=True,
                                   encoding = 'utf-8',
                                   check=True)
